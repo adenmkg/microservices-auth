@@ -1,55 +1,26 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
-executors:
-  docker-publisher:
-    docker:
-      - image: docker:17.05.0-ce-git
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  build:
-    executor: docker-publisher
+  say-hello:
+    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+    docker:
+      - image: cimg/base:stable
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
-      - setup_remote_docker
       - run:
-          name: inject env variable into dotenv file
-          command: |
-            touch .env.production
-            echo -e "AD_URL=$AD_URL\nAD_BASEDN=$AD_BASEDN\nAD_USERNAME=$AD_USERNAME\nAD_PASSWORD=$AD_PASSWORD\nDB_SERVER=$DB_SERVER\nDB_USER=$DB_USER\nDB_PASSWORD=$DB_PASSWORD\nDB_NAME=$DB_NAME\nSECRET=$SECRET\nADMIN_PWD=$ADMIN_PWD\n" > .env.production
-      - run:
-          name: Build Docker image
-          command: |
-            docker build -t $IMAGE_NAME .
-      - run:
-          name: Archive Docker image
-          command: docker save -o image.tar $IMAGE_NAME
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./image.tar
-  publish-latest:
-    executor: docker-publisher
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - setup_remote_docker
-      - run:
-          name: Load archived Docker image
-          command: docker load -i /tmp/workspace/image.tar
-      - run:
-          name: Publish Docker Img to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASS"
-            docker push $IMAGE_NAME
+          name: "Say hello"
+          command: "echo Hello, World!"
+
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  version: 2
-  build-main:
+  say-hello-workflow:
     jobs:
-      - build:
-          filters:
-            branches:
-              only: main
-      - publish-latest:
-          requires:
-            - build
-          filters:
-            branches:
-              only: main
+      - say-hello
